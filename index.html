@@ -70,6 +70,14 @@ main{max-width:520px;margin:0 auto;padding:0 16px}
 .wd small{font-size:12px;color:var(--muted)}
 .wd.sel small{color:var(--ink);font-weight:600}
 
+/* tips */
+.tips .intro{color:var(--muted);font-size:15px;margin-bottom:12px}
+.tod{background:var(--bg);border-radius:12px;padding:12px 14px;margin-bottom:10px}
+.tod b,.tl b{display:block;margin-bottom:2px}
+.tips details{margin-top:6px}
+.tips summary{cursor:pointer;min-height:44px;display:flex;align-items:center;color:var(--green);font-weight:600}
+.tl p{padding:10px 0;border-top:1px solid var(--line);font-size:15px}
+.tl p:first-child{border-top:0}
 /* advice */
 .advice p{margin:0 0 8px}
 .advice p:last-child{margin-bottom:0}
@@ -141,6 +149,14 @@ textarea{resize:vertical;min-height:84px}
     <div class="week" id="week"></div>
   </section>
 
+  <section class="card tips">
+    <h2 id="tipsTitle"></h2>
+    <p class="intro" id="tipsIntro"></p>
+    <div class="tod" id="tod"></div>
+    <button class="link" id="tipNext" type="button" style="margin:-4px 0 4px">Другой совет</button>
+    <details><summary>Все советы для вашей цели</summary><div class="tl" id="tipsAll"></div></details>
+  </section>
+
   <section class="card advice">
     <h2>Совет по питанию</h2>
     <div id="adviceBox"><p class="empty">Добавьте еду за день и получите совет: чего не хватило и что добавить.</p></div>
@@ -191,6 +207,9 @@ textarea{resize:vertical;min-height:84px}
 
   <label for="sModel">Модель</label>
   <input id="sModel" autocapitalize="off">
+
+  <label for="sModel2">Резервная модель (если основная перегружена)</label>
+  <input id="sModel2" autocapitalize="off">
 
   <div class="two">
     <div><label for="sSex">Пол</label><select id="sSex"><option value="f">Женский</option><option value="m">Мужской</option></select></div>
@@ -244,7 +263,7 @@ const store = {
   get(k, d){ try{ const v = localStorage.getItem(k); return v == null ? d : JSON.parse(v); }catch(e){ return k in mem ? mem[k] : d; } },
   set(k, v){ mem[k] = v; try{ localStorage.setItem(k, JSON.stringify(v)); }catch(e){} }
 };
-const DEF = {key:'', model:'gemini-3.8-flash', sex:'f', age:30, h:165, w:65, act:'1.375', goal:'keep', kcal:''};
+const DEF = {key:'', model:'gemini-3.8-flash', model2:'gemini-flash-latest', sex:'f', age:30, h:165, w:65, act:'1.375', goal:'keep', kcal:''};
 let S = Object.assign({}, DEF, store.get('settings', {}));
 if (S.model === 'gemini-2.5-flash') { S.model = DEF.model; store.set('settings', S); }
 let days = store.get('days', {});
@@ -314,7 +333,66 @@ function render(){
     html += `<button class="${cls}" data-d="${k}" aria-label="${esc(fmtDate(k))}: ${Math.round(kc)} ккал"><div class="col" style="height:${Math.max(4, kc/max*72)}px"></div><small>${lbl}</small></button>`;
   }
   $('#week').innerHTML = html;
+  renderTips();
 }
+
+
+/* ---------- tips by goal ---------- */
+const TIPS = {
+  lose: {
+    title: 'Питание для снижения веса',
+    intro: T => `Ваша норма ${T.k} ккал: умеренный дефицит. Безопасный темп — примерно 0,3–0,7 кг в неделю. Резкие диеты чаще приводят к срывам и потере мышц.`,
+    list: [
+      ['Держите умеренный дефицит','Не урезайте калории сильнее нормы в приложении. Медленное снижение проще удержать, и оно меньше бьёт по энергии и настроению.'],
+      ['Белок в каждом приёме пищи','Яйца, творог, рыба, птица, бобовые, греческий йогурт. Белок дольше сытит и помогает сохранить мышцы при похудении.'],
+      ['Половина тарелки — овощи','Овощи и зелень дают объём и клетчатку при малом количестве калорий. Так проще наедаться меньшими порциями.'],
+      ['Следите за жидкими калориями','Сладкие напитки, соки, сладкий кофе и алкоголь легко добавляют несколько сотен калорий и почти не сытят. Замените водой, чаем, кофе без сахара.'],
+      ['Выбирайте цельные продукты','Крупы, бобовые, картофель, фрукты сытнее, чем выпечка и сладости, при тех же калориях.'],
+      ['Силовые тренировки и шаги','Две–три силовые тренировки в неделю и ежедневные прогулки помогают терять жир, а не мышцы.'],
+      ['Спите 7–9 часов','При недосыпе сильнее тянет на сладкое и жирное, а контролировать порции труднее.'],
+      ['Смотрите на тренд, а не на один день','Вес колеблется из-за воды и соли. Взвешивайтесь в одно время и сравнивайте среднее за неделю.'],
+      ['Не запрещайте любимое','Оставьте место для любимых блюд в пределах нормы. Жёсткие запреты чаще заканчиваются срывом. Если еда вызывает тревогу или вы часто срываетесь, обсудите это со специалистом.']
+    ]
+  },
+  keep: {
+    title: 'Питание для поддержания веса',
+    intro: T => `Ваша норма ${T.k} ккал примерно равна расходу энергии. Главное здесь — стабильность, а не идеальные дни.`,
+    list: [
+      ['Ориентируйтесь на недельное среднее','Один день с перебором или недобором не страшен. Важнее, куда вы приходите в среднем за неделю.'],
+      ['Собирайте сбалансированную тарелку','Примерно по четверти на белок и крупы или картофель, половина на овощи, плюс немного полезных жиров.'],
+      ['Ешьте разнообразно','Разные овощи, фрукты, крупы, бобовые и рыба закрывают потребность в витаминах и минералах без добавок.'],
+      ['Регулярные приёмы пищи','Три основных приёма и при необходимости перекус помогают не переедать вечером.'],
+      ['Правило 80/20','Около 80% рациона из простой цельной еды, остальное — то, что любите. Так режим проще соблюдать годами.'],
+      ['Пейте достаточно воды','Ориентир — светлая моча в течение дня. В жару и при тренировках пейте больше.'],
+      ['Раз в неделю проверяйте вес','Если среднее вес растёт или падает несколько недель подряд, чуть поправьте порции или норму в настройках.']
+    ]
+  },
+  gain: {
+    title: 'Питание для набора массы',
+    intro: T => `Ваша норма ${T.k} ккал: небольшой профицит. Хороший темп — около 0,25–0,5 кг в неделю. Так прибавка идёт в основном в мышцы, а не в жир.`,
+    list: [
+      ['Небольшой, но стабильный профицит','Ешьте чуть выше расхода каждый день. Огромные порции не ускорят рост мышц, зато добавят жир.'],
+      ['Белок 1,6–2 г на кг веса','Распределите на 3–4 приёма: мясо, рыба, яйца, творог, молочные продукты, бобовые, тофу.'],
+      ['Больше углеводов вокруг тренировки','Рис, макароны, картофель, овсянка, хлеб, фрукты дают энергию для тренировок и восстановления.'],
+      ['Добавляйте калорийные продукты','Орехи и ореховая паста, оливковое масло, авокадо, сухофрукты, цельное молоко и йогурт добавляют калории малым объёмом.'],
+      ['Ешьте чаще, если сложно съесть норму','Добавьте один–два перекуса. Смузи с молоком, бананом и арахисовой пастой — лёгкий способ добрать калории.'],
+      ['Силовые тренировки с прогрессией','Без нагрузки лишние калории пойдут в жир. Постепенно увеличивайте вес или повторения 2–4 раза в неделю.'],
+      ['Спите и восстанавливайтесь','Мышцы растут во время отдыха. Целитесь в 7–9 часов сна.'],
+      ['Следите за трендом','Если вес не растёт 2–3 недели, добавьте 100–200 ккал в день. Если растёт быстрее 0,5 кг в неделю, немного уменьшите.']
+    ]
+  }
+};
+let tipShift = 0;
+function renderTips(){
+  const g = TIPS[S.goal] || TIPS.keep, T = target();
+  $('#tipsTitle').textContent = g.title;
+  $('#tipsIntro').textContent = g.intro(T);
+  const dayN = Math.floor(Date.now() / 864e5);
+  const t = g.list[(dayN + tipShift) % g.list.length];
+  $('#tod').innerHTML = `<b>${esc(t[0])}</b>${esc(t[1])}`;
+  $('#tipsAll').innerHTML = g.list.map(x => `<p><b>${esc(x[0])}</b>${esc(x[1])}</p>`).join('');
+}
+$('#tipNext').onclick = () => { tipShift++; renderTips(); };
 
 /* ---------- toast / sheets ---------- */
 let tt;
@@ -323,25 +401,47 @@ const open = id => { $(id).classList.add('open'); $(id).scrollTop = 0; };
 document.querySelectorAll('[data-close]').forEach(b => b.onclick = () => b.closest('.sheet').classList.remove('open'));
 
 /* ---------- gemini ---------- */
+let waitHook = null;
+const sleep = ms => new Promise(r => setTimeout(r, ms));
+async function callModel(model, body){
+  let r;
+  try{
+    r = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/${encodeURIComponent(model)}:generateContent`, {
+      method:'POST', headers:{'Content-Type':'application/json','x-goog-api-key':S.key}, body:JSON.stringify(body)
+    });
+  }catch(e){ const er = new Error('Нет связи с сервером. Проверьте интернет.'); er.net = true; throw er; }
+  const j = await r.json().catch(() => ({}));
+  if (!r.ok){ const er = new Error(j.error && j.error.message || ('Ошибка ' + r.status)); er.status = r.status; throw er; }
+  const t = ((j.candidates || [])[0]?.content?.parts || []).map(p => p.text || '').join('');
+  if (!t){ const er = new Error('Модель вернула пустой ответ. Попробуйте ещё раз.'); er.status = 204; throw er; }
+  return t;
+}
 async function gemini(parts, schema){
   if (!S.key) throw new Error('Сначала добавьте ключ Gemini в настройках (⚙).');
   const body = {contents:[{parts}], generationConfig:{temperature:0.2}};
   if (schema){ body.generationConfig.responseMimeType = 'application/json'; body.generationConfig.responseSchema = schema; }
-  let r;
-  try{
-    r = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/${encodeURIComponent(S.model)}:generateContent`, {
-      method:'POST', headers:{'Content-Type':'application/json','x-goog-api-key':S.key}, body:JSON.stringify(body)
-    });
-  }catch(e){ throw new Error('Нет связи с сервером. Проверьте интернет.'); }
-  const j = await r.json().catch(() => ({}));
-  if (!r.ok){
-    const m = j.error && j.error.message || ('Ошибка ' + r.status);
-    if (r.status === 429) throw new Error('Достигнут бесплатный лимит запросов. Подождите немного и повторите.');
-    throw new Error(m);
+  const models = [S.model, S.model2].filter((m, i, a) => m && a.indexOf(m) === i);
+  let last;
+  for (let mi = 0; mi < models.length; mi++){
+    for (let a = 0; a < 3; a++){
+      try{ return await callModel(models[mi], body); }
+      catch(e){
+        last = e;
+        if (e.net) throw e;
+        const busy = [500, 503, 504, 204].includes(e.status);
+        if (busy && a < 2){
+          if (waitHook) waitHook('Сервер занят, повтор ' + (a+1) + '…');
+          await sleep(1500 * (a+1));
+          continue;
+        }
+        break;
+      }
+    }
+    if (models[mi+1] && waitHook) waitHook('Пробую другую модель…');
   }
-  const t = ((j.candidates || [])[0]?.content?.parts || []).map(p => p.text || '').join('');
-  if (!t) throw new Error('Модель вернула пустой ответ. Попробуйте ещё раз.');
-  return t;
+  if (last.status === 503) throw new Error('Серверы Google сейчас перегружены. Подождите минуту и нажмите ещё раз.');
+  if (last.status === 429) throw new Error('Достигнут бесплатный лимит запросов. Подождите немного и повторите.');
+  throw last;
 }
 const SCHEMA = {
   type:'OBJECT',
@@ -396,6 +496,7 @@ $('#goBtn').onclick = async () => {
   $('#addErr').hidden = true;
   if (!photo && !txt) return showErr('Добавьте фото или опишите, что вы съели.');
   const b = $('#goBtn'); b.disabled = true; b.innerHTML = '<span class="spin"></span> Считаю…';
+  waitHook = m => { b.innerHTML = '<span class="spin"></span> ' + m; };
   try{
     const parts = [];
     if (photo) parts.push({inline_data:{mime_type:'image/jpeg', data:photo.split(',')[1]}});
@@ -410,7 +511,7 @@ $('#goBtn').onclick = async () => {
     renderDraft(); $('#draft').hidden = false;
     $('#draft').scrollIntoView({behavior:'smooth', block:'start'});
   }catch(err){ showErr(err.message); }
-  b.disabled = false; b.textContent = 'Распознать';
+  waitHook = null; b.disabled = false; b.textContent = 'Распознать';
 };
 
 const scaled = d => { const s = d.g / d.g0; return {name:d.name, g:d.g, kcal:d.k0*s, p:d.p0*s, f:d.f0*s, c:d.c0*s}; };
@@ -473,7 +574,7 @@ $('#adviceBtn').onclick = async () => {
 Съедено за выбранный день (${cur}): ${Math.round(D.k)} ккал, Б ${Math.round(D.p)}, Ж ${Math.round(D.f)}, У ${Math.round(D.c)}.
 Продукты: ${items.map(i => `${i.name} ${Math.round(i.g)} г`).join('; ')}.
 Последние 7 дней:\n${hist}
-Напиши 3–5 коротких пунктов, каждый с новой строки: что уже хорошо, чего не хватает (белок, клетчатка, овощи и т. д.), что конкретно можно съесть дальше сегодня или завтра. Без markdown-разметки и без списков со звёздочками. Не советуй есть меньше нормы и не давай медицинских назначений. Если по истории заметно систематическое сильное недоедание, мягко предложи обсудить питание с врачом.`;
+Строго учитывай цель пользователя: ${({lose:'для снижения веса делай акцент на сытности, белке, клетчатке, овощах и контроле калорий без жёстких ограничений', keep:'для поддержания веса делай акцент на балансе и стабильности', gain:'для набора массы делай акцент на достаточных калориях, белке и калорийных полезных продуктах'})[S.goal]}.\nНапиши 3–5 коротких пунктов, каждый с новой строки: что уже хорошо, чего не хватает (белок, клетчатка, овощи и т. д.), что конкретно можно съесть дальше сегодня или завтра. Без markdown-разметки и без списков со звёздочками. Не советуй есть меньше нормы и не давай медицинских назначений. Если по истории заметно систематическое сильное недоедание, мягко предложи обсудить питание с врачом.`;
   const b = $('#adviceBtn'); b.disabled = true; b.textContent = 'Думаю…';
   try{
     const t = await gemini([{text: prompt}]);
@@ -483,7 +584,7 @@ $('#adviceBtn').onclick = async () => {
 };
 
 /* ---------- settings ---------- */
-const F = {key:'#sKey', model:'#sModel', sex:'#sSex', age:'#sAge', h:'#sH', w:'#sW', act:'#sAct', goal:'#sGoal', kcal:'#sKcal'};
+const F = {key:'#sKey', model:'#sModel', model2:'#sModel2', sex:'#sSex', age:'#sAge', h:'#sH', w:'#sW', act:'#sAct', goal:'#sGoal', kcal:'#sKcal'};
 function fillSettings(){ for (const k in F) $(F[k]).value = S[k]; calcHint(); }
 function readSettings(){ const o = {}; for (const k in F) o[k] = $(F[k]).value.trim(); return o; }
 function calcHint(){
@@ -496,6 +597,7 @@ $('#setBtn').onclick = () => { fillSettings(); open('#setSheet'); };
 $('#sSave').onclick = () => {
   const n = readSettings();
   if (!n.model) n.model = DEF.model;
+  if (!n.model2) n.model2 = DEF.model2;
   S = Object.assign({}, S, n); store.set('settings', S);
   $('#setSheet').classList.remove('open'); render(); toast('Настройки сохранены');
 };
