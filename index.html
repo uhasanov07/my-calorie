@@ -1,0 +1,522 @@
+<!doctype html>
+<html lang="ru">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="theme-color" content="#EFF3EC">
+<title>Мой рацион</title>
+<link href="https://fonts.googleapis.com/css2?family=Onest:wght@400;500;600&family=Unbounded:wght@500;700&display=swap" rel="stylesheet">
+<style>
+:root{
+  --bg:#EFF3EC; --card:#FAFCF8; --ink:#1E2B24; --muted:#66766B; --line:#D6DFD3;
+  --green:#2F5D45; --beet:#A3254F; --beet-dark:#861D40;
+  --p:#3566A8; --f:#C48A12; --c:#4E8B57;
+  --safe-b:env(safe-area-inset-bottom,0px);
+}
+*{box-sizing:border-box;margin:0;-webkit-tap-highlight-color:transparent}
+html{background:var(--bg)}
+body{font-family:'Onest',system-ui,-apple-system,'Segoe UI',Roboto,sans-serif;color:var(--ink);background:var(--bg);line-height:1.45;font-size:16px;padding-bottom:calc(96px + var(--safe-b))}
+button,input,select,textarea{font:inherit;color:inherit}
+button{cursor:pointer;border:0;background:none}
+:focus-visible{outline:3px solid var(--p);outline-offset:2px;border-radius:6px}
+main{max-width:520px;margin:0 auto;padding:0 16px}
+
+/* top */
+.top{display:flex;align-items:center;justify-content:space-between;padding:calc(14px + env(safe-area-inset-top,0px)) 0 8px}
+.day{display:flex;align-items:center;gap:4px}
+.day h1{font-size:18px;font-weight:600;min-width:140px;text-align:center}
+.ib{width:44px;height:44px;border-radius:50%;display:grid;place-items:center;font-size:20px;color:var(--green)}
+.ib:active{background:var(--line)}
+.ib:disabled{opacity:.3}
+
+/* hero */
+.hero{display:grid;grid-template-columns:150px 1fr;gap:16px;align-items:center;padding:12px 0 20px}
+.ring{position:relative;width:150px;height:150px}
+.ring svg{width:100%;height:100%;transform:rotate(-90deg)}
+.ring circle{fill:none;stroke-width:12;stroke-linecap:round}
+.ring .bg{stroke:var(--line)}
+.ring .fg{stroke:var(--green);transition:stroke-dashoffset .5s ease,stroke .3s}
+.ring.over .fg{stroke:var(--beet)}
+.ring .num{position:absolute;inset:0;display:flex;flex-direction:column;align-items:center;justify-content:center}
+.num b{font-family:'Unbounded',sans-serif;font-weight:700;font-size:30px;letter-spacing:-.02em;line-height:1}
+.num span{font-size:13px;color:var(--muted);margin-top:4px}
+.macros{display:grid;gap:12px}
+.m .row{display:flex;justify-content:space-between;font-size:14px;margin-bottom:4px}
+.m .row span:last-child{color:var(--muted)}
+.bar{height:8px;border-radius:4px;background:var(--line);overflow:hidden}
+.bar i{display:block;height:100%;border-radius:4px;transition:width .4s}
+
+/* cards */
+.card{background:var(--card);border:1px solid var(--line);border-radius:16px;padding:16px;margin-bottom:14px}
+.card h2{font-size:16px;font-weight:600;margin-bottom:10px}
+.empty{color:var(--muted);font-size:15px}
+.entry{display:grid;grid-template-columns:1fr auto 36px;gap:8px;align-items:center;padding:10px 0;border-top:1px solid var(--line)}
+.entry:first-of-type{border-top:0;padding-top:0}
+.entry .n{font-weight:500}
+.entry .s{font-size:13px;color:var(--muted)}
+.entry .k{font-weight:600;white-space:nowrap}
+.del{width:36px;height:36px;border-radius:50%;color:var(--muted);font-size:18px}
+.del:active{background:var(--line)}
+
+/* week */
+.week{display:flex;gap:6px;align-items:flex-end;height:96px}
+.wd{flex:1;display:flex;flex-direction:column;align-items:center;gap:4px;height:100%;justify-content:flex-end}
+.wd .col{width:100%;border-radius:6px 6px 2px 2px;background:var(--line);min-height:4px}
+.wd.has .col{background:var(--green)}
+.wd.over .col{background:var(--beet)}
+.wd.sel .col{outline:2px solid var(--ink);outline-offset:1px}
+.wd small{font-size:12px;color:var(--muted)}
+.wd.sel small{color:var(--ink);font-weight:600}
+
+/* advice */
+.advice p{margin:0 0 8px}
+.advice p:last-child{margin-bottom:0}
+.btn{display:inline-flex;align-items:center;justify-content:center;gap:8px;min-height:48px;padding:0 20px;border-radius:14px;font-weight:600;background:var(--beet);color:#fff}
+.btn:active{background:var(--beet-dark)}
+.btn:disabled{opacity:.5}
+.btn.ghost{background:transparent;color:var(--green);border:1.5px solid var(--green)}
+.btn.block{width:100%}
+.link{color:var(--green);text-decoration:underline;font-size:14px;min-height:44px;padding:0 4px}
+
+/* bottom bar */
+.dock{position:fixed;left:0;right:0;bottom:0;padding:12px 16px calc(12px + var(--safe-b));background:linear-gradient(to top,var(--bg) 70%,transparent)}
+.dock .in{max-width:520px;margin:0 auto;display:flex;gap:10px}
+.dock .btn:first-child{flex:1}
+.dock .gear{width:48px;padding:0;background:var(--card);border:1px solid var(--line);color:var(--green);font-size:20px}
+
+/* sheets */
+.sheet{position:fixed;inset:0;z-index:10;background:var(--bg);overflow-y:auto;transform:translateY(100%);visibility:hidden;transition:transform .28s ease,visibility 0s .28s}
+.sheet.open{transform:none;visibility:visible;transition:transform .28s ease}
+.sheet .in{max-width:520px;margin:0 auto;padding:calc(12px + env(safe-area-inset-top,0px)) 16px calc(32px + var(--safe-b))}
+.sheet header{display:flex;justify-content:space-between;align-items:center;margin-bottom:12px}
+.sheet h2{font-size:20px;font-weight:600}
+label{display:block;font-size:14px;color:var(--muted);margin:12px 0 4px}
+input,select,textarea{width:100%;background:var(--card);border:1px solid var(--line);border-radius:12px;padding:12px;min-height:48px}
+textarea{resize:vertical;min-height:84px}
+.two{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+.photo{display:flex;gap:10px;align-items:center;margin-bottom:4px}
+.photo img{width:72px;height:72px;object-fit:cover;border-radius:12px;border:1px solid var(--line)}
+.hint{font-size:13px;color:var(--muted);margin-top:6px}
+.err{color:var(--beet);font-size:14px;margin-top:10px}
+.draft .r{display:grid;grid-template-columns:1fr 84px 36px;gap:8px;align-items:center;padding:10px 0;border-top:1px solid var(--line)}
+.draft .r:first-child{border-top:0}
+.draft .r input{min-height:42px;padding:8px;text-align:right}
+.draft .meta{font-size:13px;color:var(--muted)}
+.draft .tot{font-weight:600;margin:12px 0}
+.toast{position:fixed;left:50%;bottom:calc(88px + var(--safe-b));transform:translateX(-50%);background:var(--ink);color:#fff;padding:10px 16px;border-radius:12px;font-size:14px;z-index:20;opacity:0;pointer-events:none;transition:opacity .2s}
+.toast.show{opacity:1}
+.spin{width:18px;height:18px;border:2.5px solid rgba(255,255,255,.4);border-top-color:#fff;border-radius:50%;animation:sp .8s linear infinite}
+@keyframes sp{to{transform:rotate(360deg)}}
+@media (prefers-reduced-motion:reduce){*{transition:none!important;animation-duration:2s!important}}
+@media (max-width:360px){.hero{grid-template-columns:120px 1fr}.ring{width:120px;height:120px}.num b{font-size:24px}}
+</style>
+</head>
+<body>
+<main>
+  <div class="top">
+    <div class="day">
+      <button class="ib" id="prev" aria-label="Предыдущий день">‹</button>
+      <h1 id="dayTitle"></h1>
+      <button class="ib" id="next" aria-label="Следующий день">›</button>
+    </div>
+  </div>
+
+  <section class="hero">
+    <div class="ring" id="ring">
+      <svg viewBox="0 0 120 120"><circle class="bg" cx="60" cy="60" r="52"/><circle class="fg" id="fg" cx="60" cy="60" r="52"/></svg>
+      <div class="num"><b id="left">0</b><span id="leftLbl">осталось ккал</span></div>
+    </div>
+    <div class="macros" id="macros"></div>
+  </section>
+
+  <section class="card">
+    <h2>Что съедено</h2>
+    <div id="list"></div>
+  </section>
+
+  <section class="card">
+    <h2>Неделя</h2>
+    <div class="week" id="week"></div>
+  </section>
+
+  <section class="card advice">
+    <h2>Совет по питанию</h2>
+    <div id="adviceBox"><p class="empty">Добавьте еду за день и получите совет: чего не хватило и что добавить.</p></div>
+    <div style="margin-top:12px"><button class="btn ghost" id="adviceBtn">Получить совет</button></div>
+  </section>
+</main>
+
+<div class="dock"><div class="in">
+  <button class="btn" id="addBtn">Добавить еду</button>
+  <button class="btn gear" id="setBtn" aria-label="Настройки">⚙</button>
+</div></div>
+
+<!-- Add sheet -->
+<div class="sheet" id="addSheet" role="dialog" aria-label="Добавить еду"><div class="in">
+  <header><h2>Добавить еду</h2><button class="ib" data-close aria-label="Закрыть">✕</button></header>
+
+  <label for="photoIn" style="margin-top:0">Фото еды</label>
+  <div class="photo">
+    <img id="pv" alt="" hidden>
+    <button class="btn ghost" id="photoBtn" type="button">Сделать или выбрать фото</button>
+    <button class="link" id="photoClear" type="button" hidden>Убрать</button>
+  </div>
+  <input type="file" id="photoIn" accept="image/*" hidden>
+
+  <label for="desc">Описание (необязательно, если есть фото)</label>
+  <textarea id="desc" placeholder="Например: 200 г гречки и две сосиски"></textarea>
+  <p class="hint">Если знаете вес, напишите его. Так оценка точнее.</p>
+
+  <div style="margin-top:14px"><button class="btn block" id="goBtn">Распознать</button></div>
+  <div class="err" id="addErr" hidden></div>
+
+  <div class="draft" id="draft" hidden>
+    <h2 style="margin:22px 0 4px">Проверьте и поправьте</h2>
+    <div id="rows"></div>
+    <div class="tot" id="draftTot"></div>
+    <p class="hint" id="draftNote"></p>
+    <div style="margin-top:14px"><button class="btn block" id="saveBtn">Записать в дневник</button></div>
+  </div>
+</div></div>
+
+<!-- Settings sheet -->
+<div class="sheet" id="setSheet" role="dialog" aria-label="Настройки"><div class="in">
+  <header><h2>Настройки</h2><button class="ib" data-close aria-label="Закрыть">✕</button></header>
+
+  <label for="sKey" style="margin-top:0">Ключ Gemini API</label>
+  <input id="sKey" type="password" autocomplete="off" placeholder="Вставьте ключ">
+  <p class="hint">Бесплатный ключ: aistudio.google.com/apikey. Хранится только на этом устройстве.</p>
+
+  <label for="sModel">Модель</label>
+  <input id="sModel" autocapitalize="off">
+
+  <div class="two">
+    <div><label for="sSex">Пол</label><select id="sSex"><option value="f">Женский</option><option value="m">Мужской</option></select></div>
+    <div><label for="sAge">Возраст</label><input id="sAge" type="number" inputmode="numeric"></div>
+    <div><label for="sH">Рост, см</label><input id="sH" type="number" inputmode="numeric"></div>
+    <div><label for="sW">Вес, кг</label><input id="sW" type="number" inputmode="decimal"></div>
+  </div>
+
+  <label for="sAct">Активность</label>
+  <select id="sAct">
+    <option value="1.2">Сидячий образ жизни</option>
+    <option value="1.375">Лёгкая (1–3 тренировки в неделю)</option>
+    <option value="1.55">Средняя (3–5 тренировок)</option>
+    <option value="1.725">Высокая (6–7 тренировок)</option>
+  </select>
+
+  <label for="sGoal">Цель</label>
+  <select id="sGoal">
+    <option value="lose">Снизить вес (умеренно)</option>
+    <option value="keep">Держать вес</option>
+    <option value="gain">Набрать вес</option>
+  </select>
+
+  <label for="sKcal">Своя норма ккал (если пусто, считается автоматически)</label>
+  <input id="sKcal" type="number" inputmode="numeric">
+
+  <p class="hint" id="sCalc" style="margin-top:12px"></p>
+
+  <div style="margin-top:16px"><button class="btn block" id="sSave">Сохранить</button></div>
+
+  <h2 style="margin:28px 0 4px;font-size:16px">Резервная копия</h2>
+  <p class="hint" style="margin:0 0 8px">Данные живут в браузере. Если очистите данные сайта, они пропадут, поэтому иногда делайте копию.</p>
+  <div class="two">
+    <button class="btn ghost" id="exp">Скачать</button>
+    <button class="btn ghost" id="impBtn">Загрузить</button>
+  </div>
+  <input type="file" id="impIn" accept="application/json" hidden>
+  <p class="hint" style="margin-top:20px">Приложение даёт приблизительные оценки и не заменяет консультацию врача или диетолога.</p>
+</div></div>
+
+<div class="toast" id="toast" role="status"></div>
+
+<script>
+const $ = s => document.querySelector(s);
+const esc = s => String(s).replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+const r1 = n => Math.round(n*10)/10;
+
+/* ---------- storage ---------- */
+const mem = {};
+const store = {
+  get(k, d){ try{ const v = localStorage.getItem(k); return v == null ? d : JSON.parse(v); }catch(e){ return k in mem ? mem[k] : d; } },
+  set(k, v){ mem[k] = v; try{ localStorage.setItem(k, JSON.stringify(v)); }catch(e){} }
+};
+const DEF = {key:'', model:'gemini-2.5-flash', sex:'f', age:30, h:165, w:65, act:'1.375', goal:'keep', kcal:''};
+let S = Object.assign({}, DEF, store.get('settings', {}));
+let days = store.get('days', {});
+
+/* ---------- dates ---------- */
+const z = n => String(n).padStart(2,'0');
+const dkey = d => d.getFullYear()+'-'+z(d.getMonth()+1)+'-'+z(d.getDate());
+const parse = k => { const [y,m,d] = k.split('-').map(Number); return new Date(y, m-1, d); };
+const shift = (k, n) => { const d = parse(k); d.setDate(d.getDate()+n); return dkey(d); };
+const today = () => dkey(new Date());
+let cur = today();
+function fmtDate(k){
+  if (k === today()) return 'Сегодня';
+  if (k === shift(today(), -1)) return 'Вчера';
+  return parse(k).toLocaleDateString('ru-RU', {weekday:'short', day:'numeric', month:'long'});
+}
+
+/* ---------- norms ---------- */
+function target(){
+  const w = +S.w, h = +S.h, a = +S.age;
+  const bmr = 10*w + 6.25*h - 5*a + (S.sex === 'm' ? 5 : -161);
+  const mult = {lose:.85, keep:1, gain:1.1}[S.goal] || 1;
+  const floor = S.sex === 'm' ? 1500 : 1200;
+  let k = Math.max(bmr * (+S.act) * mult, floor);
+  if (+S.kcal > 0) k = +S.kcal;
+  k = Math.round(k/10)*10;
+  const p = Math.round(w*1.6), f = Math.round(w*0.9);
+  const c = Math.max(0, Math.round((k - p*4 - f*9)/4));
+  return {k, p, f, c};
+}
+function sum(items){
+  return items.reduce((t, i) => ({k:t.k+i.kcal, p:t.p+i.p, f:t.f+i.f, c:t.c+i.c}), {k:0,p:0,f:0,c:0});
+}
+
+/* ---------- render ---------- */
+function render(){
+  const T = target(), items = days[cur] || [], D = sum(items);
+  $('#dayTitle').textContent = fmtDate(cur);
+  $('#next').disabled = cur >= today();
+
+  const left = Math.round(T.k - D.k), over = left < 0;
+  $('#left').textContent = Math.abs(left);
+  $('#leftLbl').textContent = over ? 'ккал сверх нормы' : 'осталось ккал';
+  const R = 52, C = 2*Math.PI*R, frac = Math.min(1, D.k / T.k);
+  const fg = $('#fg');
+  fg.style.strokeDasharray = C;
+  fg.style.strokeDashoffset = C * (1 - frac);
+  $('#ring').classList.toggle('over', over);
+
+  const mac = (name, v, t, col) => `<div class="m"><div class="row"><span>${name}</span><span>${Math.round(v)} из ${t} г</span></div><div class="bar"><i style="width:${Math.min(100, t ? v/t*100 : 0)}%;background:${col}"></i></div></div>`;
+  $('#macros').innerHTML = mac('Белки', D.p, T.p, 'var(--p)') + mac('Жиры', D.f, T.f, 'var(--f)') + mac('Углеводы', D.c, T.c, 'var(--c)');
+
+  $('#list').innerHTML = items.length ? items.map(i => `
+    <div class="entry">
+      <div><div class="n">${esc(i.name)}</div><div class="s">${Math.round(i.g)} г · Б ${r1(i.p)} · Ж ${r1(i.f)} · У ${r1(i.c)}</div></div>
+      <div class="k">${Math.round(i.kcal)} ккал</div>
+      <button class="del" data-id="${i.id}" aria-label="Удалить ${esc(i.name)}">✕</button>
+    </div>`).join('') : '<p class="empty">Пока пусто. Нажмите «Добавить еду» и сфотографируйте тарелку или опишите словами.</p>';
+
+  // week
+  let html = '';
+  const max = Math.max(T.k, ...Array.from({length:7}, (_, n) => sum(days[shift(cur, n-6)] || []).k)) * 1.05;
+  for (let n = 0; n < 7; n++){
+    const k = shift(cur, n-6), kc = sum(days[k] || []).k;
+    const cls = ['wd', kc > 0 ? 'has' : '', kc > T.k ? 'over' : '', k === cur ? 'sel' : ''].join(' ');
+    const lbl = parse(k).toLocaleDateString('ru-RU', {weekday:'short'});
+    html += `<button class="${cls}" data-d="${k}" aria-label="${esc(fmtDate(k))}: ${Math.round(kc)} ккал"><div class="col" style="height:${Math.max(4, kc/max*72)}px"></div><small>${lbl}</small></button>`;
+  }
+  $('#week').innerHTML = html;
+}
+
+/* ---------- toast / sheets ---------- */
+let tt;
+function toast(m){ const t = $('#toast'); t.textContent = m; t.classList.add('show'); clearTimeout(tt); tt = setTimeout(() => t.classList.remove('show'), 2200); }
+const open = id => { $(id).classList.add('open'); $(id).scrollTop = 0; };
+document.querySelectorAll('[data-close]').forEach(b => b.onclick = () => b.closest('.sheet').classList.remove('open'));
+
+/* ---------- gemini ---------- */
+async function gemini(parts, schema){
+  if (!S.key) throw new Error('Сначала добавьте ключ Gemini в настройках (⚙).');
+  const body = {contents:[{parts}], generationConfig:{temperature:0.2}};
+  if (schema){ body.generationConfig.responseMimeType = 'application/json'; body.generationConfig.responseSchema = schema; }
+  let r;
+  try{
+    r = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/${encodeURIComponent(S.model)}:generateContent`, {
+      method:'POST', headers:{'Content-Type':'application/json','x-goog-api-key':S.key}, body:JSON.stringify(body)
+    });
+  }catch(e){ throw new Error('Нет связи с сервером. Проверьте интернет.'); }
+  const j = await r.json().catch(() => ({}));
+  if (!r.ok){
+    const m = j.error && j.error.message || ('Ошибка ' + r.status);
+    if (r.status === 429) throw new Error('Достигнут бесплатный лимит запросов. Подождите немного и повторите.');
+    throw new Error(m);
+  }
+  const t = ((j.candidates || [])[0]?.content?.parts || []).map(p => p.text || '').join('');
+  if (!t) throw new Error('Модель вернула пустой ответ. Попробуйте ещё раз.');
+  return t;
+}
+const SCHEMA = {
+  type:'OBJECT',
+  properties:{
+    items:{type:'ARRAY', items:{type:'OBJECT', properties:{
+      name:{type:'STRING'}, grams:{type:'NUMBER'}, kcal:{type:'NUMBER'},
+      protein:{type:'NUMBER'}, fat:{type:'NUMBER'}, carbs:{type:'NUMBER'}
+    }, required:['name','grams','kcal','protein','fat','carbs']}},
+    comment:{type:'STRING'}
+  },
+  required:['items']
+};
+const PROMPT = 'Ты внимательный нутрициолог. Определи все блюда и продукты (по фото и/или описанию). Для каждого оцени вес порции в граммах (в готовом виде), калории и белки, жиры, углеводы в граммах для этого веса. Если пользователь указал вес или количество, используй его. Разбивай сложные блюда на основные составляющие, если они заметны. Названия на русском, короткие. В поле comment напиши одну короткую фразу о том, насколько оценка точна и что могло повлиять.';
+
+function toB64(file, max = 1024){
+  return new Promise((res, rej) => {
+    const img = new Image(), u = URL.createObjectURL(file);
+    img.onload = () => {
+      const k = Math.min(1, max / Math.max(img.width, img.height));
+      const c = document.createElement('canvas');
+      c.width = Math.round(img.width*k); c.height = Math.round(img.height*k);
+      c.getContext('2d').drawImage(img, 0, 0, c.width, c.height);
+      URL.revokeObjectURL(u);
+      res(c.toDataURL('image/jpeg', .82));
+    };
+    img.onerror = () => rej(new Error('Не удалось открыть фото.'));
+    img.src = u;
+  });
+}
+
+/* ---------- add flow ---------- */
+let photo = null, draft = [];
+function resetAdd(){
+  photo = null; draft = [];
+  $('#desc').value = ''; $('#pv').hidden = true; $('#photoClear').hidden = true;
+  $('#draft').hidden = true; $('#addErr').hidden = true; $('#photoIn').value = '';
+}
+$('#addBtn').onclick = () => { resetAdd(); open('#addSheet'); };
+$('#photoBtn').onclick = () => $('#photoIn').click();
+$('#photoClear').onclick = () => { photo = null; $('#pv').hidden = true; $('#photoClear').hidden = true; $('#photoIn').value = ''; };
+$('#photoIn').onchange = async e => {
+  const f = e.target.files[0]; if (!f) return;
+  try{
+    photo = await toB64(f);
+    $('#pv').src = photo; $('#pv').hidden = false; $('#photoClear').hidden = false;
+  }catch(err){ showErr(err.message); }
+};
+function showErr(m){ const e = $('#addErr'); e.textContent = m; e.hidden = false; }
+
+$('#goBtn').onclick = async () => {
+  const txt = $('#desc').value.trim();
+  $('#addErr').hidden = true;
+  if (!photo && !txt) return showErr('Добавьте фото или опишите, что вы съели.');
+  const b = $('#goBtn'); b.disabled = true; b.innerHTML = '<span class="spin"></span> Считаю…';
+  try{
+    const parts = [];
+    if (photo) parts.push({inline_data:{mime_type:'image/jpeg', data:photo.split(',')[1]}});
+    parts.push({text: PROMPT + (txt ? '\nОписание от пользователя: ' + txt : '')});
+    const out = JSON.parse(await gemini(parts, SCHEMA));
+    draft = (out.items || []).filter(i => i && i.name).map(i => ({
+      name:i.name, g0:Math.max(1, +i.grams || 100), g:Math.max(1, +i.grams || 100),
+      k0:+i.kcal || 0, p0:+i.protein || 0, f0:+i.fat || 0, c0:+i.carbs || 0
+    }));
+    if (!draft.length) throw new Error('Не удалось распознать еду. Опишите подробнее.');
+    $('#draftNote').textContent = out.comment || '';
+    renderDraft(); $('#draft').hidden = false;
+    $('#draft').scrollIntoView({behavior:'smooth', block:'start'});
+  }catch(err){ showErr(err.message); }
+  b.disabled = false; b.textContent = 'Распознать';
+};
+
+const scaled = d => { const s = d.g / d.g0; return {name:d.name, g:d.g, kcal:d.k0*s, p:d.p0*s, f:d.f0*s, c:d.c0*s}; };
+function renderDraft(){
+  $('#rows').innerHTML = draft.map((d, i) => {
+    const s = scaled(d);
+    return `<div class="r">
+      <div><div class="n">${esc(d.name)}</div><div class="meta" id="m${i}">${Math.round(s.kcal)} ккал · Б ${r1(s.p)} · Ж ${r1(s.f)} · У ${r1(s.c)}</div></div>
+      <input type="number" inputmode="decimal" min="1" value="${Math.round(d.g)}" data-i="${i}" aria-label="Граммы: ${esc(d.name)}">
+      <button class="del" data-rm="${i}" aria-label="Убрать ${esc(d.name)}">✕</button>
+    </div>`;
+  }).join('');
+  draftTotal();
+}
+function draftTotal(){
+  const t = sum(draft.map(scaled));
+  $('#draftTot').textContent = `Итого: ${Math.round(t.k)} ккал · Б ${Math.round(t.p)} · Ж ${Math.round(t.f)} · У ${Math.round(t.c)}`;
+  $('#saveBtn').disabled = !draft.length;
+}
+$('#rows').addEventListener('input', e => {
+  const i = e.target.dataset.i; if (i == null) return;
+  draft[i].g = Math.max(1, +e.target.value || 1);
+  const s = scaled(draft[i]);
+  $('#m'+i).textContent = `${Math.round(s.kcal)} ккал · Б ${r1(s.p)} · Ж ${r1(s.f)} · У ${r1(s.c)}`;
+  draftTotal();
+});
+$('#rows').addEventListener('click', e => {
+  const b = e.target.closest('[data-rm]'); if (!b) return;
+  draft.splice(+b.dataset.rm, 1); renderDraft();
+});
+$('#saveBtn').onclick = () => {
+  const list = days[cur] || (days[cur] = []);
+  draft.forEach((d, n) => list.push(Object.assign({id: Date.now() + '' + n}, scaled(d))));
+  store.set('days', days);
+  $('#addSheet').classList.remove('open');
+  $('#adviceBox').innerHTML = '<p class="empty">Еда добавлена. Нажмите «Получить совет», чтобы обновить рекомендации.</p>';
+  render(); toast('Записано в дневник');
+};
+
+/* ---------- diary actions ---------- */
+$('#list').addEventListener('click', e => {
+  const b = e.target.closest('[data-id]'); if (!b) return;
+  days[cur] = (days[cur] || []).filter(i => i.id !== b.dataset.id);
+  store.set('days', days); render();
+});
+$('#week').addEventListener('click', e => { const b = e.target.closest('[data-d]'); if (b){ cur = b.dataset.d; render(); } });
+$('#prev').onclick = () => { cur = shift(cur, -1); render(); };
+$('#next').onclick = () => { if (cur < today()){ cur = shift(cur, 1); render(); } };
+
+/* ---------- advice ---------- */
+$('#adviceBtn').onclick = async () => {
+  const items = days[cur] || [];
+  const box = $('#adviceBox');
+  if (!items.length){ box.innerHTML = '<p class="empty">Сначала добавьте хотя бы один приём пищи за этот день.</p>'; return; }
+  const T = target(), D = sum(items);
+  const hist = Array.from({length:7}, (_, n) => { const k = shift(cur, n-6); const t = sum(days[k] || []); return `${k}: ${Math.round(t.k)} ккал, Б ${Math.round(t.p)}, Ж ${Math.round(t.f)}, У ${Math.round(t.c)}`; }).join('\n');
+  const prompt = `Ты дружелюбный нутрициолог. Дай краткие практичные советы по питанию на русском.
+Профиль: ${S.sex === 'm' ? 'мужчина' : 'женщина'}, ${S.age} лет, ${S.h} см, ${S.w} кг, цель: ${({lose:'умеренно снизить вес', keep:'держать вес', gain:'набрать вес'})[S.goal]}.
+Норма на день: ${T.k} ккал, Б ${T.p} г, Ж ${T.f} г, У ${T.c} г.
+Съедено за выбранный день (${cur}): ${Math.round(D.k)} ккал, Б ${Math.round(D.p)}, Ж ${Math.round(D.f)}, У ${Math.round(D.c)}.
+Продукты: ${items.map(i => `${i.name} ${Math.round(i.g)} г`).join('; ')}.
+Последние 7 дней:\n${hist}
+Напиши 3–5 коротких пунктов, каждый с новой строки: что уже хорошо, чего не хватает (белок, клетчатка, овощи и т. д.), что конкретно можно съесть дальше сегодня или завтра. Без markdown-разметки и без списков со звёздочками. Не советуй есть меньше нормы и не давай медицинских назначений. Если по истории заметно систематическое сильное недоедание, мягко предложи обсудить питание с врачом.`;
+  const b = $('#adviceBtn'); b.disabled = true; b.textContent = 'Думаю…';
+  try{
+    const t = await gemini([{text: prompt}]);
+    box.innerHTML = t.split(/\n+/).map(l => l.replace(/^[\s*\-•\d.)]+/, '').replace(/\*\*/g, '').trim()).filter(Boolean).map(l => `<p>${esc(l)}</p>`).join('');
+  }catch(err){ box.innerHTML = `<p class="err" style="margin:0">${esc(err.message)}</p>`; }
+  b.disabled = false; b.textContent = 'Получить совет';
+};
+
+/* ---------- settings ---------- */
+const F = {key:'#sKey', model:'#sModel', sex:'#sSex', age:'#sAge', h:'#sH', w:'#sW', act:'#sAct', goal:'#sGoal', kcal:'#sKcal'};
+function fillSettings(){ for (const k in F) $(F[k]).value = S[k]; calcHint(); }
+function readSettings(){ const o = {}; for (const k in F) o[k] = $(F[k]).value.trim(); return o; }
+function calcHint(){
+  const old = S; S = Object.assign({}, S, readSettings());
+  const T = target(); S = old;
+  $('#sCalc').textContent = `Ваша норма: ${T.k} ккал · белки ${T.p} г · жиры ${T.f} г · углеводы ${T.c} г`;
+}
+document.querySelectorAll('#setSheet input, #setSheet select').forEach(el => el.addEventListener('input', calcHint));
+$('#setBtn').onclick = () => { fillSettings(); open('#setSheet'); };
+$('#sSave').onclick = () => {
+  const n = readSettings();
+  if (!n.model) n.model = DEF.model;
+  S = Object.assign({}, S, n); store.set('settings', S);
+  $('#setSheet').classList.remove('open'); render(); toast('Настройки сохранены');
+};
+$('#exp').onclick = () => {
+  const blob = new Blob([JSON.stringify({days}, null, 1)], {type:'application/json'});
+  const a = document.createElement('a'); a.href = URL.createObjectURL(blob);
+  a.download = 'ration-' + today() + '.json'; a.click(); URL.revokeObjectURL(a.href);
+};
+$('#impBtn').onclick = () => $('#impIn').click();
+$('#impIn').onchange = async e => {
+  const f = e.target.files[0]; if (!f) return;
+  try{
+    const j = JSON.parse(await f.text());
+    if (!j.days || typeof j.days !== 'object') throw 0;
+    days = j.days; store.set('days', days); render(); toast('Данные загружены');
+  }catch(err){ toast('Не удалось прочитать файл'); }
+  e.target.value = '';
+};
+
+/* ---------- start ---------- */
+render();
+if (!S.key) setTimeout(() => { fillSettings(); open('#setSheet'); }, 300);
+</script>
+</body>
+</html>
